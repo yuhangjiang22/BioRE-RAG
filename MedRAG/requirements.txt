@@ -1,6 +1,6 @@
 faiss-cpu==1.7.4
 python-liquid==1.10.2
-openai==0.28.0
+openai==1.37.0
 langchain==0.0.345
 tqdm==4.66.1
 transformers==4.37.2
