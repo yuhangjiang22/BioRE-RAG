@@ -1,0 +1,49 @@
+Your task is to extract all drug-drug interactions (DDIs) from an input biomedical text. The corpus annotates pharmacological substances and drug-drug interactions with four entity types: "DRUG", "BRAND", "GROUP", and "DRUG_N". 
+The "DRUG" type is used to annotate those human medicines known by a generic name, whereas those drugs described by a trade or brand name are annotated as "BRAND" entities. A drug medication frequently has several brand names since different companies can market it. The use of a brand-name drug instead of its generic name may be related to a higher risk of adverse drug events. The use of either generic or brand names depends on the drug information source. Thus, while generic names are used in medical and pharmacological textbooks as well as scientific medical journals, brand names are to be used in drug product labels. "GROUP" is used to include the group type to annotate groups of drugs. Extrapolating from drug interactions involving a specific compound to interactions involving its group is a common procedure in some DDI information sources. "DRUG_N" refers to those active substances not approved for human use, such as, and among others, toxins or pesticides. 
+Additionally, there are four different types of DDI relationships: "MECHANISM", "EFFECT", "ADVISE", "INT". "MECHANISM" is used to annotate DDIs that are described by their PK mechanism (e.g. Grepafloxacin may inhibit the metabolism of theobromine). "EFFECT" is used to annotate DDIs describing an effect (e.g. In uninfected volunteers, 46% developed rash while receiving SUSTIVA and clarithromycin) or a PD mechanism (e.g. Chlorthali- done may potentiate the action of other antihypertensive drugs). "ADVISE" is used when a recommendation or advice regarding a drug interaction is given (e.g. UROXATRAL should not be used in combination with other alpha-blockers). "INT" is used when a DDI appears in the text without providing any additional information (e.g. The interaction of omeprazole and ketoconazole has been established).
+Note that drug mentions should have appeared from the original input text. Make sure that each relation is based on mentions within the same sentence in an abstract.
+The output triples should be saved as per the following format:
+{'relations':
+[
+  {
+  "entity1": {
+    "text": "text1",
+    "entity_type": "entity_type1"
+  },
+  "entity2": {
+    "text": "text2",
+    "entity_type": "entity_type2"
+  },
+  "relation": "relation1"
+  },
+  ...
+]
+}
+The output will be {'relations':[]} if there are no relevant triples expressed in the input text.
+With this format, a hypothetical example output for a biomedical text could be the following:
+{'relations':
+[
+  {
+  "entity1": {
+    "text": "fenfluramine",
+    "entity_type": "DRUG"
+  },
+  "entity2": {
+    "text": "antihypertensive drugs",
+    "entity_type": "GROUP"
+  },
+  "relation": "EFFECT"
+  },
+  {
+  "entity1": {
+    "text": "ERGOMAR",
+    "entity_type": "BRAND"
+  },
+  "entity2": {
+    "text": "vasoconstrictor drugs",
+    "entity_type": "GROUP"
+  },
+  "relation": "EFFECT"
+  }
+]
+}

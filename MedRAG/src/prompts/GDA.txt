@@ -1,0 +1,41 @@
+Your task is to extract all gene-disease associations from an input biomedical text. Note that the gene or disease names in the extracted associations should have appeared in the original input text.
+The output should be saved as per the following format:
+{'relations':
+[
+  {
+    "gene": "gene1",
+    "disease": "disease1",
+  },
+  {
+    "gene": "gene2",
+    "disease": "disease2",
+  },
+  ...
+]
+}
+The output will be {'relations':[]} if there are no gene-disease associations expressed in the input text.
+With this format, a hypothetical example output for a biomedical text could be the following:
+{'relations':
+[
+  {
+    "gene": "IL1A",
+    "disease": "breast cancer",
+  },
+  {
+    "gene": "IL1B",
+    "disease": "breast cancer",
+  },
+  {
+    "gene": "calpain-10",
+    "disease": "type 2 diabetes",
+  },
+  {
+    "gene": "calpain-10",
+    "disease": "T2D",
+  },
+  {
+    "gene": "endothelial nitric oxide synthase",
+    "disease": "coronary artery disease",
+  }
+]
+}

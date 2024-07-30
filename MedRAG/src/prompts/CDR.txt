@@ -1,0 +1,29 @@
+Your task is to extract all chemical-disease relations from a text in which the chemical/drug induces the disease. Note that the chemical or disease names should have appeared in the original input text.
+The output should be saved as per the following format:
+{'relations':
+[
+  {
+    "chemical": "chemical1",
+    "disease": "disease1"
+  },
+  {
+    "chemical": "chemical2",
+    "disease": "disease2"
+  },
+  ...
+]
+}
+The output will be {'relations':[]} if there are no chemical-disease pairs in which the chemical induces the disease expressed in the input text.
+With this format, a hypothetical example output for a biomedical text could be the following:
+{'relations':
+[
+  {
+    "chemical": "Lidocaine",
+    "disease": "cardiac asystole"
+  },
+  {
+    "gene": "daunorubicin",
+    "disease": "neutropenia"
+  }
+]
+}

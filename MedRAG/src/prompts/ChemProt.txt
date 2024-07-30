@@ -1,0 +1,44 @@
+Your task is to extract all relevant triples from an input biomedical text. Each triple has a chemical mention, a gene/protein mention, and a predicate linking the two mentions. The predicate belongs to one of the following 5 predicates: 'CPR:3', 'CPR:4', 'CPR:5', 'CPR:6' and 'CPR:9'. These 5 predicates are further specified as below: 
+'CPR:3' includes UPREGULATOR, ACTIVATOR and INDIRECT UPREGULATOR
+'CPR:4' includes DOWNREGULATOR, INHIBITOR and INDIRECT DOWNREGULATOR
+'CPR:5' includes AGONIST, AGONIST ACTIVATOR and AGONIST INHIBITOR
+'CPR:6' includes ANTAGONIST
+'CPR:9' includes SUBSTRATE, PRODUCT OF and SUBSTRATE PRODUCT OF
+Note that chemical or gene/protein mentions should have appeared from the original input text. Make sure that each relation is based on mentions within the same sentence in an abstract. 
+The output triples should be saved as per the following format:
+{'relations':
+[
+  {
+    "chemical": "chemical1",
+    "gene": "gene1",
+    "relation": "relation1"
+  },
+  {
+    "chemical": "chemical2",
+    "gene": "gene2",
+    "relation": "relation2"
+  },
+  ...
+]
+}
+The output will be {'relations':[]} if there are no relevant triples expressed in the input text.
+With this format, a hypothetical example output for a biomedical text could be the following:
+{'relations':
+[
+  {
+    "chemical": "polyamines",
+    "gene": "caspase",
+    "relation": "CPR:3"
+  },
+  {
+    "chemical": "DL-alpha-difluoromethylornithine",
+    "gene": "ornithine decarboxylase",
+    "relation": "CPR:4"
+  },
+  {
+    "chemical": "putrescine",
+    "gene": "ODC",
+    "relation": "CPR:9"
+  }
+]
+}

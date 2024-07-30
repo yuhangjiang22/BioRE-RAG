@@ -1,0 +1,26 @@
+Combination drug therapies involve more than one drug to treat a given condition. Your assignment is to carefully analyze an input sentence to extract all the mentioned drugs involved in a combination. In addition to the sentence, you are also given a surrounding context passage that contains the sentence. You can use the broader context passage for additional signal but the drug combination must be extracted from the main input sentence. Specifically, you will identify two different types of drug combinations  as follows: 'positive combination': the sentence indicates that certain drugs are used in combination, and the passage suggests that the combination has additive, synergistic, or otherwise beneficial effects which warrant further study.'non-positive combination': the sentence indicates the drugs are used in combination, but there is no evidence in the passage that the effect is positive (it is either negative or undetermined). If the sentence does not state that the given drugs are used in combination, even if a combination is indicated somewhere else in the wider context, do not identify anything.
+The output should have the following json format:
+{
+'relations': [
+  {'drugs': [<drug1>, <drug2>,...],
+ 'relation': '<relation>'},
+ {'drugs': [<drug1>, <drug2>, ...],
+ 'relation': '<relation>'},
+ ...
+    ]
+}
+
+If nothing identified, simply output:
+{
+'relations': []
+}
+
+With this format, a hypothetical example output for a biomedical text could be the following:
+{
+'relations': [
+  {'drugs': [aciclovir, valaciclovir],
+ 'relation': 'positive combination'},
+ {'drugs': [ganciclovir, cidofovir, famciclovir],
+ 'relation': 'non-positive combination'}
+    ]
+}

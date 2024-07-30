@@ -1,0 +1,130 @@
+# @package _global_
+
+# optimization
+train_batch_size: 8
+eval_batch_size: 8
+gradient_acc_steps: 4
+gradient_clip_value: 10.0
+max_steps: 3000
+
+# evaluation and persistence
+apply_early_stopping: False
+val_check_interval: 1.0
+val_percent_check: 1.0
+monitor_var: 'val_F1_micro'
+monitor_var_mode: 'max'
+patience: 5
+model_name: 'ade'
+save_top_k: 3
+
+# core
+gpus: 1
+precision: 16
+amp_level:
+
+do_train: True
+do_eval: True
+do_predict: False
+evaluation_strategy: "no"
+prediction_loss_only: False
+checkpoint_path:
+
+per_device_train_batch_size: 8
+per_device_eval_batch_size: 8
+
+per_gpu_train_batch_size:
+per_gpu_eval_batch_size:
+
+gradient_accumulation_steps: 1
+eval_accumulation_steps:
+
+learning_rate: 0.00005
+weight_decay: 0.01
+adam_beta1: 0.9
+adam_beta2: 0.999
+adam_epsilon: 0.00000001
+max_grad_norm: 1.0
+
+num_train_epochs: 10.0
+
+seed: 42
+
+fp16_opt_level: "O1"
+fp16_backend: "auto"
+local_rank: -1
+
+dataloader_drop_last: False
+eval_steps:
+dataloader_num_workers: 0
+
+past_index: -1
+
+run_name:
+disable_tqdm:
+
+remove_unused_columns: True
+label_names:
+
+load_best_model_at_end: False
+metric_for_best_model:
+greater_is_better:
+ignore_data_skip: False
+sharded_ddp: False
+deepspeed:
+label_smoothing_factor: 0.0
+adafactor: False
+group_by_length: False
+
+dataloader_pin_memory: True
+
+
+label_smoothing: 0.0
+sortish_sampler: False
+predict_with_generate: False
+decoder_layerdrop:
+dropout: 0.1
+attention_dropout:
+lr_scheduler: "linear"
+warmup_steps: 300
+classifier: False
+# Callbacks
+samples_interval: 250
+
+# Logger
+offline_mode: False
+
+# @package _global_
+
+model_name_or_path: 'facebook/bart-large'
+config_name: 'facebook/bart-large'
+tokenizer_name: 'facebook/bart-large'
+cache_dir:
+use_fast_tokenizer: True
+
+model_revision: 'main'
+use_auth_token: False
+finetune: False
+
+# @package _global_
+
+num_workers: 8
+dataset_name: '/Users/kaka/PycharmProjects/biomedrag/rebel/datasets/ade/ade.py'
+text_column: 'context'
+target_column: 'triplets'
+train_file: 'train.json'
+validation_file: 'val.json'
+test_file: 'test.json'
+overwrite_cache: False
+preprocessing_num_workers:
+max_source_length: 1024
+max_target_length: 128
+val_max_target_length: 128
+pad_to_max_length: False
+max_train_samples:
+max_val_samples:
+max_test_samples:
+num_beams:
+eval_beams: 3
+ignore_pad_token_for_loss: True
+source_prefix:
+relations_file:

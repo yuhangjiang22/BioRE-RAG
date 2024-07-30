@@ -1,0 +1,32 @@
+Your task is to analyze the sentence and extract all relationships between drugs and their adverse drug effects (ADEs). Each sentence may contain multiple drug-ADE pairs. Note that the drug or ADE mentions extracted should have appeared in the original input text. Carefully identify each drug and its corresponding ADE, and the output should be saved as per the following format:
+{'relations':
+[
+  {
+    "drug": "drug1",
+    "ade": "ade1",
+  },
+  {
+    "drug": "drug2",
+    "ade": "ade2",
+  },
+  ...
+]
+}
+The output will be {'relations':[]} if there are no drug-ade associations expressed in the input text.
+With this format, a hypothetical example output for a pharmacological text could be the following:
+{'relations':
+[
+  {
+    "drug": "Warfarin",
+    "ade": "intracranial hemorrhage",
+  },
+  {
+    "drug": "Clozapine",
+    "ade": "myocarditis",
+  },
+  {
+    "drug": "Isotretinoin",
+    "ade": "depression",
+  }
+]
+}

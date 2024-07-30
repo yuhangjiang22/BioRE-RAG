@@ -1,0 +1,75 @@
+Your task is to identify and extract pairwise relationships among the following entity types: "GeneOrGeneProduct", "DiseaseOrPhenotypicFeature", "ChemicalEntity", and "SequenceVariant". Each relationship should involve only two entities at a time. The detailed definitions for each entity type are provided as below: "GeneOrGeneProduct": For genes, proteins, mRNA and other gene products; "DiseaseOrPhenotypicFeature": For diseases, symptoms and some disease-related phenotypes; "ChemicalEntity": For chemicals and drugs; "SequenceVariant": For genomic/protein variants (including substitutions, deletions, insertions and others). Note that all entities should have appeared from the original input text.
+
+Additionally, there are eight different types of nondirectional relationships annotated in the corpus: "Positive_Correlation", "Negative_Correlation", "Association", "Bind", "Cotreatment", "Drug_Interaction", "Comparison", and "Conversion". Relation types are valid for certain combinations of entity types as below:
+
+"DiseaseOrPhenotypicFeature"-"ChemicalEntity" Relations:
+"Positive_Correlation": Chemicals may induce diseases, increase disease risk, or their levels may correlate with disease risk.
+"Negative_Correlation": Chemicals used as drugs may treat diseases or decrease disease susceptibility.
+"Association": Captures relationships not clearly defined as positive or negative correlations, such as drugs with potential safety concerns.
+
+"DiseaseOrPhenotypicFeature"-"GeneOrGeneProduct" Relations:
+"Positive_Correlation": Overexpression or side effects of proteins (from genes) may cause diseases.
+"Negative_Correlation": Proteins used as drugs may treat diseases or their absence may cause diseases.
+"Association": Includes functional genes preventing diseases and other associations not falling under positive/negative correlations.
+
+"DiseaseOrPhenotypicFeature"-"SequenceVariant" Relations:
+"Positive_Correlation": Variants may increase disease risk, contribute to disease susceptibility, or cause protein deficiencies leading to diseases.
+"Negative_Correlation": Variants may decrease disease risk.
+"Association": Includes variants associated with disease prevalence and those that cannot be categorized as causing the disease.
+
+"GeneOrGeneProduct"-"GeneOrGeneProduct" Relations:
+"Positive_Correlation": Genes may show positive correlations in expression or regulatory functions.
+"Negative_Correlation": Genes may show negative correlations in expression or regulatory functions.
+"Association": Modifications like phosphorylation or other associations that cannot be categorized differently.
+"Bind": Physical interactions between proteins, including protein binding at gene promoters.
+
+"GeneOrGeneProduct"-"ChemicalEntity" Relations:
+"Positive_Correlation": Chemicals may cause higher gene expression or gene variants may trigger chemical adverse effects.
+"Negative_Correlation": Chemicals may cause lower gene expression or gene variants may confer resistance to chemicals.
+"Association": Non-specific associations and binding interactions between chemicals and gene promoters.
+
+"ChemicalEntity"-"ChemicalEntity" Relations:
+"Positive_Correlation": One chemical may increase the sensitivity or effectiveness of another.
+"Negative_Correlation": One chemical may decrease the sensitivity or side effects of another.
+"Association": Includes chemical conversions and non-specific associations.
+"Drug_Interaction": Pharmacodynamic interactions between chemicals or drugs.
+"Cotreatment": Combination therapy using multiple chemicals.
+"Conversion": One chemical converting to another.
+
+"ChemicalEntity"-"SequenceVariant" Relations:
+"Positive_Correlation": Chemicals may cause higher expression of a gene variant or increase sensitivity due to a variant.
+"Negative_Correlation": Chemicals may decrease gene expression due to a variant or the variant may confer resistance.
+"Association": Captures relationships not defined as positive/negative correlations, like variants on chemical binding sites.
+
+The output triples should be saved as per the following format:
+{'relations':
+[
+  {
+  "entity1": {
+    "text": "text1",
+    "entity_type": "entity_type1"
+  },
+  "entity2": {
+    "text": "text2",
+    "entity_type": "entity_type2"
+  },
+  "relation": "relation1"
+  },
+  ...
+]
+}
+With this format, a hypothetical example output for a biomedical text could be the following:
+{'relations':
+[
+  {
+    "ChemicalEntity": "ouabain",
+    "DiseaseOrPhenotypicFeature": "arrhythmias",
+    "relation": "Positive_Correlation"
+  },
+  {
+    "ChemicalEntity": "aconitine",
+    "GeneOrGeneProduct": "m(3)-muscarinic acetylcholine receptor",
+    "relation": "Association"
+  }
+]
+}
