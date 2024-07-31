@@ -259,9 +259,8 @@ def generate_relations_example(dataset_name,
                        save_dir,
                        model = 'gpt-4-1106-preview', 
                        temperature = 0.7,
-                       max_tokens = 4096, 
-                       predicted_relations_filename='predicted_relations.save',
-                       max_examples=1,
+                       max_tokens = 4096,
+                       max_examples=None,
                        data_seed=1,
                        generate_seed=0,
                        num_docs=5):
@@ -321,10 +320,13 @@ def generate_relations_example(dataset_name,
     print('Extract relations without support docs...')
 
     for i, el in enumerate(tqdm(dataset, desc='generating')):
+        if not el.relations:
+            print('Current example has no relations, continue to next one...')
+            continue
         key = el.title.lower()
         if completed:
             if key in completed:
-                print(f'Input with title {key} has been found, continue to process next input...')
+                print(f'Input with title {key} has been processed, continue to next one...')
                 continue
         print('\n\nExample:\n', el)
         fail_counter = 0
@@ -366,21 +368,17 @@ def generate_relations_example(dataset_name,
         performance = evaluate_performance_example(el,
                                        relations,
                                        data_seed=data_seed)
-        
+
         print('\n\nPerformance without docs:\n', performance)
 
         out_dict = {}
         out_dict['good_docs'] = list()
         out_dict['bad_docs'] = list()
+        out_dict['no_difference_docs'] = list()
         out_dict['relation_without_doc'] = relation_list
         out_dict['input_text'] = el.title + el.text
         out_dict['key'] = el.title.lower()
         out_dict['f1_without_doc'] = performance['F1']
-
-        # responses.append(response)
-        # generations.append(generation)
-        # predicted_relations.append(relations)
-        # performance_zeroshot.append(performance)
 
         print('Retrieving support docs...')
 
@@ -467,6 +465,13 @@ def generate_relations_example(dataset_name,
                      'difference': performanceDocs['F1'] - out_dict['f1_without_doc']})
             elif performanceDocs['F1'] < out_dict['f1_without_doc']:
                 out_dict['bad_docs'].append(
+                    {'id': doc['id'],
+                     'PMID': doc['PMID'],
+                     'contents': doc['contents'],
+                     'F1': performanceDocs['F1'],
+                     'difference': performanceDocs['F1'] - out_dict['f1_without_doc']})
+            else:
+                out_dict['no_difference_docs'].append(
                     {'id': doc['id'],
                      'PMID': doc['PMID'],
                      'contents': doc['contents'],
