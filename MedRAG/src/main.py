@@ -267,6 +267,7 @@ def generate_relations_example(dataset_name,
                        num_docs=5):
     # preliminaries
     save_dir = os.path.join(save_dir, dataset_name + 'Doc')
+    save_dir = save_dir + f'_num_docs_{num_docs}'
     if not os.path.exists(save_dir):
         make_dir(save_dir)
 
@@ -282,15 +283,15 @@ def generate_relations_example(dataset_name,
             completed.append(d['key'])
 
     random.seed(data_seed)
-    print('loading dataset...')
+    print('Loading dataset...')
     # load data
     dataset = load_dataset(dataset_name, split)
-    print('done.')
+    print('Done.')
 
     # testing out on a small portion of data
     if max_examples is not None:
         dataset.random_subset(max_examples, data_seed)
-    print('loading templates...')
+    print('Loading templates...')
     # Get templates for appropriate dataset
     templates = importlib.import_module(f'templates.{dataset_name}')
     template = getattr(templates, template)
@@ -298,24 +299,24 @@ def generate_relations_example(dataset_name,
     # Get templates for appropriate dataset
     templatesDocs = importlib.import_module(f'templates.{dataset_name}')
     templateDocs = getattr(templatesDocs, templateDocs)
-    print('done.')
+    print('Done.')
 
     # Retriever details
     corpus = 'pubmed'
     db_dir = '../corpus'
     model_name = "ncbi/MedCPT-Query-Encoder"
-    print('building retriever...')
+    print('Building retriever...')
     retriever = Retriever(model_name, corpus, db_dir)
-    print(f'retriever has been built, using checkpoint {model_name}.')
+    print(f'Retriever has been built, using checkpoint {model_name}.')
     # body
-    responses = list()
-    responsesDocs = list()
-    generations = list()
-    generationsDocs = list()
-    predicted_relations = list()
-    predicted_relationsDocs = list()
-    performance_zeroshot = list()
-    performance_support_docs = list()
+    # responses = list()
+    # responsesDocs = list()
+    # generations = list()
+    # generationsDocs = list()
+    # predicted_relations = list()
+    # predicted_relationsDocs = list()
+    # performance_zeroshot = list()
+    # performance_support_docs = list()
 
     print('Extract relations without support docs...')
 
@@ -402,10 +403,11 @@ def generate_relations_example(dataset_name,
                                             'PMID': doc['PMID'],
                                             'title': doc['title'],
                                             'content': doc['content']} for doc in docs[:num_docs]]
-        out_dict['documents_scores'] = scores[:num_docs]
+        out_dict['document_scores'] = scores[:num_docs]
         print('\n\nExtract relations with support docs...')
+        out_dict['relation_with_doc'] = {}
 
-        for doc in d[:num_docs]:
+        for i, doc in enumerate(d[:num_docs]):
             el.docs = [doc]
             # Extract relations with support docs
             fail_counter = 0
@@ -452,15 +454,23 @@ def generate_relations_example(dataset_name,
                                            relationsDocs,
                                            data_seed=data_seed)
 
-            print('\n\nPerformance with docs:\n', performanceDocs)
+            print(f'\n\nPerformance with doc {(i+1)}/{num_docs}:\n', performanceDocs)
 
-            out_dict['relation_with_doc'] = relation_list
+            out_dict['relation_with_doc'][doc['PMID']] = relation_list
             if performanceDocs['F1'] > out_dict['f1_without_doc']:
                 out_dict['good_docs'].append(
-                    {'id': doc['id'], 'PMID': doc['PMID'], 'contents': doc['contents'], 'F1': performanceDocs['F1']})
+                    {'id': doc['id'],
+                     'PMID': doc['PMID'],
+                     'contents': doc['contents'],
+                     'F1': performanceDocs['F1'],
+                     'difference': performanceDocs['F1'] - out_dict['f1_without_doc']})
             elif performanceDocs['F1'] < out_dict['f1_without_doc']:
                 out_dict['bad_docs'].append(
-                    {'id': doc['id'], 'PMID': doc['PMID'], 'contents': doc['contents'], 'F1': performanceDocs['F1']})
+                    {'id': doc['id'],
+                     'PMID': doc['PMID'],
+                     'contents': doc['contents'],
+                     'F1': performanceDocs['F1'],
+                     'difference': performanceDocs['F1'] - out_dict['f1_without_doc']})
 
             print(f'Writing results to outfile_{split}.json...')
             with open(os.path.join(save_dir, f'outfile_{split}.json'), 'a') as file:
@@ -480,8 +490,7 @@ def generate_relations_example(dataset_name,
         # pickle_save(generationsDocs, os.path.join(save_dir, 'generationsDocs.save'))
         # pickle_save(predicted_relationsDocs, os.path.join(save_dir, 'predicted_relationsDocs.save'))
 
-        
-    return predicted_relations    
+
 
 def run(dataset_name,
         split,
