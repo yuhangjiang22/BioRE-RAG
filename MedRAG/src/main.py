@@ -16,6 +16,7 @@ from copy import deepcopy
 from utils import pickle_save, pickle_load, make_dir, save_json
 from universal_classes import F1Calculator, Oracle
 from utils import Retriever
+import time
 
 def query_plm(example, 
               template,
@@ -328,7 +329,7 @@ def generate_relations_example(dataset_name,
             if key in completed:
                 print(f'Input with title {key} has been processed, continue to next one...')
                 continue
-        print('\n\nExample:\n', el)
+        # print('\n\nExample:\n', el)
         fail_counter = 0
         while fail_counter < 3:
             try:
@@ -395,8 +396,8 @@ def generate_relations_example(dataset_name,
                 continue
             docs.append(doc)
             scores.append(score)
-        print('Document retrieved: ', docs)
-        print('Scores retrieved: ', scores)
+        # print('Document retrieved: ', docs)
+        # print('Scores retrieved: ', scores)
 
         out_dict['documents_retrieved'] = [{'id': doc['id'],
                                             'PMID': doc['PMID'],
@@ -407,6 +408,7 @@ def generate_relations_example(dataset_name,
         out_dict['relation_with_doc'] = {}
 
         for m, doc in enumerate(d[:num_docs]):
+            time.sleep(5)
             el.docs = [doc]
             # Extract relations with support docs
             fail_counter = 0

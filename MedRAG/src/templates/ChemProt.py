@@ -66,8 +66,8 @@ class ChemProtTemplate_json_docs:
         user = {'role': 'user',
                 'content': user_content}
         
-        print('user content:\n', user['content'])
-        print('system content:\n', system['content'])
+        # print('user content:\n', user['content'])
+        # print('system content:\n', system['content'])
         messages = [system, user]
 
         return messages
