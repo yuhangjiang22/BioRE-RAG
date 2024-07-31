@@ -387,11 +387,12 @@ def generate_relations_example(dataset_name,
         
         d, s = retriever.get_relevant_documents(f'Input text:\n\nTitle: {el.title}, Abrastract: {el.text}', k=10)
 
+        #remove same abstract
         docs =[]
         scores = []
-        for i in range(len(d)):
-            doc = d[i]
-            score = s[i]
+        for j in range(len(d)):
+            doc = d[j]
+            score = s[j]
             if doc['title'] == el.title:
                 continue
             docs.append(doc)
@@ -407,7 +408,7 @@ def generate_relations_example(dataset_name,
         print('\n\nExtract relations with support docs...')
         out_dict['relation_with_doc'] = {}
 
-        for i, doc in enumerate(d[:num_docs]):
+        for m, doc in enumerate(d[:num_docs]):
             el.docs = [doc]
             # Extract relations with support docs
             fail_counter = 0
@@ -454,7 +455,7 @@ def generate_relations_example(dataset_name,
                                            relationsDocs,
                                            data_seed=data_seed)
 
-            print(f'\n\nPerformance with doc {(i+1)}/{num_docs}:\n', performanceDocs)
+            print(f'\n\nPerformance with doc {(m+1)}/{num_docs}:\n', performanceDocs)
 
             out_dict['relation_with_doc'][doc['PMID']] = relation_list
             if performanceDocs['F1'] > out_dict['f1_without_doc']:
@@ -472,23 +473,10 @@ def generate_relations_example(dataset_name,
                      'F1': performanceDocs['F1'],
                      'difference': performanceDocs['F1'] - out_dict['f1_without_doc']})
 
-            print(f'Writing results to outfile_{split}.json...')
-            with open(os.path.join(save_dir, f'outfile_{split}.json'), 'a') as file:
-                json_line = json.dumps(out_dict)
-                file.write(json_line + '\n')
-
-        # responsesDocs.append(responseDocs)
-        # generationsDocs.append(generationDocs)
-        # predicted_relationsDocs.append(relationsDocs)
-        # performance_support_docs.append(performanceDocs)
-
-        # pickle_save(responses, os.path.join(save_dir, 'responses.save'))
-        # pickle_save(generations, os.path.join(save_dir, 'generations.save'))
-        # pickle_save(predicted_relations, os.path.join(save_dir, predicted_relations_filename))
-        #
-        # pickle_save(responsesDocs, os.path.join(save_dir, 'responsesDocs.save'))
-        # pickle_save(generationsDocs, os.path.join(save_dir, 'generationsDocs.save'))
-        # pickle_save(predicted_relationsDocs, os.path.join(save_dir, 'predicted_relationsDocs.save'))
+        print(f'Writing results to outfile_{split}.json...')
+        with open(os.path.join(save_dir, f'outfile_{split}.json'), 'a') as file:
+            json_line = json.dumps(out_dict)
+            file.write(json_line + '\n')
 
 
 
