@@ -1,5 +1,3 @@
-import omegaconf
-import hydra
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint

@@ -271,6 +271,11 @@ def generate_relations_example(dataset_name,
     if not os.path.exists(save_dir):
         make_dir(save_dir)
 
+    print('Loading dataset...')
+    # load data
+    dataset = load_dataset(dataset_name, split)
+    print('Done.')
+
     completed = list()
     if os.path.exists(os.path.join(save_dir, f'outfile_{split}.json')):
         curr_progress = list()
@@ -283,10 +288,6 @@ def generate_relations_example(dataset_name,
             completed.append(d['key'])
 
     random.seed(data_seed)
-    print('Loading dataset...')
-    # load data
-    dataset = load_dataset(dataset_name, split)
-    print('Done.')
 
     # testing out on a small portion of data
     if max_examples is not None:
@@ -327,7 +328,7 @@ def generate_relations_example(dataset_name,
         key = el.title.lower()
         if completed:
             if key in completed:
-                print(f'Input with title {key} has been processed, continue to next one...')
+                print(f'Input with title {key} has been found, continue to next one...')
                 continue
         # print('\n\nExample:\n', el)
         fail_counter = 0
@@ -407,7 +408,7 @@ def generate_relations_example(dataset_name,
         print('\n\nExtract relations with support docs...')
         out_dict['relation_with_doc'] = {}
 
-        for m, doc in enumerate(d[:num_docs]):
+        for m, doc in enumerate(docs[:num_docs]):
             time.sleep(5)
             el.docs = [doc]
             # Extract relations with support docs
@@ -479,6 +480,80 @@ def generate_relations_example(dataset_name,
                      'contents': doc['contents'],
                      'F1': performanceDocs['F1'],
                      'difference': performanceDocs['F1'] - out_dict['f1_without_doc']})
+
+        print(f'Writing results to outfile_{split}.json...')
+        with open(os.path.join(save_dir, f'outfile_{split}.json'), 'a') as file:
+            json_line = json.dumps(out_dict)
+            file.write(json_line + '\n')
+
+
+def retrieve_documents(dataset_name,
+                       split,
+                       save_dir,
+                       data_seed=1,
+                       num_docs=5):
+    # preliminaries
+    save_dir = os.path.join(save_dir, dataset_name + 'Doc')
+    save_dir = save_dir + f'_num_docs_{num_docs}'
+    if not os.path.exists(save_dir):
+        make_dir(save_dir)
+
+    print('Loading dataset...')
+    # load data
+    dataset = load_dataset(dataset_name, split)
+    print('Done.')
+
+    completed = list()
+    if os.path.exists(os.path.join(save_dir, f'outfile_{split}.json')):
+        curr_progress = list()
+        with open(os.path.join(save_dir, f'outfile_{split}.json'), 'r') as file:
+            for line in file:
+                json_line = json.loads(line.strip())
+                curr_progress.append(json_line)
+
+        for d in curr_progress:
+            completed.append(d['key'])
+
+    random.seed(data_seed)
+    # Retriever details
+    corpus = 'pubmed'
+    db_dir = '../corpus'
+    model_name = "ncbi/MedCPT-Query-Encoder"
+    print('Building retriever...')
+    retriever = Retriever(model_name, corpus, db_dir)
+    print(f'Retriever has been built, using checkpoint {model_name}.')
+
+
+    for i, el in enumerate(tqdm(dataset, desc='generating')):
+        key = el.title.lower()
+        if completed:
+            if key in completed:
+                print(f'Input with title {key} has been found, continue to next one...')
+                continue
+        out_dict = {}
+        out_dict['input_text'] = el.title + ' ' + el.text
+        out_dict['key'] = el.title.lower()
+
+        print('Retrieving support docs...')
+
+        d, s = retriever.get_relevant_documents(f'Input text:\n\nTitle: {el.title}, Abrastract: {el.text}', k=11)
+
+        # remove same abstract
+        docs = []
+        scores = []
+        for j in range(len(d)):
+            doc = d[j]
+            score = s[j]
+            if doc['title'] == el.title:
+                continue
+            docs.append(doc)
+            scores.append(score)
+
+        out_dict['documents_retrieved'] = [{'id': doc['id'],
+                                            'PMID': doc['PMID'],
+                                            'title': doc['title'],
+                                            'content': doc['content']} for doc in docs[:num_docs]]
+        out_dict['document_scores'] = scores[:num_docs]
 
         print(f'Writing results to outfile_{split}.json...')
         with open(os.path.join(save_dir, f'outfile_{split}.json'), 'a') as file:
