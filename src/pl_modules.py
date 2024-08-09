@@ -94,8 +94,8 @@ class BasePLModule(pl.LightningModule):
         self.tokenizer = tokenizer
         self.model = model
         self.config = config
-        self.train_loss = []
-        self.train_logits = []
+        # self.train_loss = []
+        # self.train_logits = []
         self.validation_predictions = []
         self.validation_labels = []
         self.test_predictions = []
@@ -141,7 +141,7 @@ class BasePLModule(pl.LightningModule):
             # labels = torch.where(labels != -100, labels, self.config.pad_token_id)
             labels.masked_fill_(labels == -100, self.config.pad_token_id)
             loss, _ = self.loss_fn(lprobs, labels, self.hparams.label_smoothing, ignore_index=self.config.pad_token_id)
-        output_dict = {'loss': loss, 'logits': logits}
+        # output_dict = {'loss': loss, 'logits': logits}
         return loss, logits
         # return output_dict
 
@@ -151,10 +151,11 @@ class BasePLModule(pl.LightningModule):
         batch["decoder_input_ids"] = torch.where(labels != -100, labels, self.config.pad_token_id)
         labels = shift_tokens_left(labels, -100)
         loss, logits = self.forward(batch, labels)
-        self.train_loss.append(loss)
-        self.train_logits.append(logits)
-        self.log('loss', loss)
+        # self.train_loss.append(loss)
+        # self.train_logits.append(logits)
+        self.log('loss', loss, on_step=False, on_epoch=False)
         batch["labels"] = labels_original
+        # print(torch.cuda.memory_summary())
 
         return loss
 
@@ -458,12 +459,12 @@ class BasePLModule(pl.LightningModule):
                 "weight_decay": 0.0,
             },
         ]
-        optimizer_cls = Adafactor if self.hparams.adafactor else AdamW
+        optimizer_cls = Adafactor if self.hparams.adafactor else torch.optim.AdamW
         if self.hparams.adafactor:
             optimizer_cls = Adafactor
             optimizer_kwargs = {"scale_parameter": False, "relative_step": False}
         else:
-            optimizer_cls = AdamW
+            optimizer_cls = torch.optim.AdamW
             optimizer_kwargs = {
                 "betas": (self.hparams.adam_beta1, self.hparams.adam_beta2),
                 "eps": self.hparams.adam_epsilon,

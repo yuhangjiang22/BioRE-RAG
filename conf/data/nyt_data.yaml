@@ -5,7 +5,7 @@ dataset_name: '/home/martinez/rebel/datasets/nyt_typed.py'
 text_column: 'context'
 target_column: 'triplets'
 train_file: '/home/martinez/rebel/data/nyt/train.json'
-validation_file: '/home/martinez/rebel/data/nyt/dev.json'
+validation_file: '/home/martinez/rebel/data/nyt/val.json'
 test_file: '/home/martinez/rebel/data/nyt/test.json'
 overwrite_cache: False
 preprocessing_num_workers: 

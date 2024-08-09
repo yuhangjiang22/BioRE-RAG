@@ -99,7 +99,7 @@ def construct_index(index_dir, model_name, h_dim=768):
     else:
         index = faiss.IndexFlatIP(h_dim)
 
-    for fname in tqdm.tqdm(sorted(os.listdir(os.path.join(index_dir, "embedding")))[:600]):
+    for fname in tqdm.tqdm(sorted(os.listdir(os.path.join(index_dir, "embedding")))[900:]):
         curr_embed = np.load(os.path.join(index_dir, "embedding", fname))
         index.add(curr_embed)
         with open(os.path.join(index_dir, "metadatas.jsonl"), 'a+') as f:
@@ -282,4 +282,5 @@ if __name__ == "__main__":
     db_dir = 'biomedrag-rebel/biomedrag/MedRAG/corpus'
     model_name = "ncbi/MedCPT-Query-Encoder"
     retriever = Retriever(model_name, corpus, db_dir)
+    d, s = retriever.get_relevant_documents('question', 10)
 

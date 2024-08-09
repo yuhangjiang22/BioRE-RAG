@@ -1,4 +1,3 @@
-
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 
@@ -45,7 +44,7 @@ pl_data_module = BasePLDataModule(conf, tokenizer, model)
 
 pl_module = BasePLModule(conf, config, tokenizer, model)
 
-wandb_logger = WandbLogger(project = conf.dataset_name.split('/')[-1].replace('.py', ''), name = conf.model_name_or_path.split('/')[-1])
+# wandb_logger = WandbLogger(project = conf.dataset_name.split('/')[-1].replace('.py', ''), name = conf.model_name_or_path.split('/')[-1])
 
 callbacks_store = []
 

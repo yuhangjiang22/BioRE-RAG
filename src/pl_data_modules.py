@@ -6,6 +6,7 @@ import torch
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from datasets import load_dataset, set_caching_enabled
+import datasets
 from transformers import (
     AutoConfig,
     AutoModelForSeq2SeqLM,
@@ -66,7 +67,7 @@ class BasePLDataModule(pl.LightningDataModule):
             self.datasets = load_dataset(conf.dataset_name, data_files={'train': conf.train_file, 'dev': conf.validation_file, 'test': conf.test_file, 'relations': conf.relations_file})
         else:
             self.datasets = load_dataset(conf.dataset_name)
-        set_caching_enabled(True)
+        datasets.enable_caching()
         self.prefix = conf.source_prefix if conf.source_prefix is not None else ""
         self.column_names = self.datasets["train"].column_names
         # self.source_lang, self.target_lang, self.text_column, self.summary_column = None, None, None, None

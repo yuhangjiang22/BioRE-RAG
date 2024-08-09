@@ -17,6 +17,7 @@ from utils import pickle_save, pickle_load, make_dir, save_json
 from universal_classes import F1Calculator, Oracle
 from utils import Retriever
 import time
+from rerank import CrossEncoder, Rerank, get_whole_corpus
 
 def query_plm(example, 
               template,
@@ -70,48 +71,88 @@ def load_dataset(dataset_name, split):
     dataset = pickle_load(os.path.join(base_directory, dataset_name, f'{split}_data.save'))
     return dataset
 
+def save_results(path, dict):
+    with open(os.path.join(path), 'w') as file:
+        to_write = json.dumps(dict)
+        file.write(to_write)
+
+
 
 # %%
 def generate_relations(dataset_name,
                        split,
-                       template,
+                       templateDocs,
                        openai_key,
                        save_dir,
                        model = 'gpt-4-1106-preview', 
-                       temperature = 0.7,
+                       temperature = 0.1,
                        max_tokens = 4096, 
                        predicted_relations_filename='predicted_relations.save',
                        max_examples=1,
                        data_seed=0,
-                       generate_seed=0
+                       generate_seed=0,
+                       retrieved_file='output/ChemProtDoc_num_docs_10/outfile_test.json',
+                       reranker_model='reranker',
+                       top_k=10,
                        ):
+    print('make output dir...')
     # preliminaries
     make_dir(save_dir)
-
+    print('done')
     random.seed(data_seed)
-
+    print('load dataset...')
     # load data
     dataset = load_dataset(dataset_name, split)
-
+    print('done')
+    print('load retrieved documents...')
+    retrieved = list()
+    with open(retrieved_file, 'r') as file:
+        for line in file:
+            json_line = json.loads(line.strip())
+            retrieved.append(json_line)
+    corpus, queries, results = get_whole_corpus(retrieved)
+    print('done')
+    print('reranking documents...')
+    if os.path.exists(os.path.join(save_dir, 'rerank_results_top_{}.json'.format(top_k))):
+        with open(os.path.join(save_dir, 'rerank_results_top_{}.json'.format(top_k)), 'r') as file:
+            rerank_results = json.load(file)
+    else:
+        cross_encoder = CrossEncoder(reranker_model, reranker_model, 'cpu')
+        reranker = Rerank(cross_encoder, batch_size=16)
+        rerank_results = reranker.rerank(corpus, queries, results, top_k=top_k)
+        save_results(os.path.join(save_dir, 'rerank_results_top_{}.json'.format(top_k)), rerank_results)
+    queries = {queries[key]: key for key, _ in queries.items()}
+    print('done')
     # testing out on a small portion of data
     if max_examples is not None:
         dataset.random_subset(max_examples, data_seed)
-
+        print('preparing {} examples to test...'.format(max_examples))
     # Get templates for appropriate dataset
-    templates = importlib.import_module(f'templates.{dataset_name}')
-    template = getattr(templates, template)
-
+    print('loading templates...')
+    templatesDocs = importlib.import_module(f'templates.{dataset_name}')
+    templateDocs = getattr(templatesDocs, templateDocs)
+    print('done')
     # body
     responses = list()
     generations = list()
     predicted_relations = list()
-
+    print('testing on {} examples...'.format(len(dataset)))
     for i, el in enumerate(tqdm(dataset, desc='generating')):
+        key = el.title.lower()
+        rerank_result = rerank_results[queries[key]]
+        curr_score = 100
+        for docid, score in rerank_result.items():
+            if score < curr_score:
+                curr_score = score
+                pmid = docid
+        doc = corpus[pmid]
+        doc['contents'] = doc['title'] + ' ' + doc['text']
+        el.docs = [doc]
         fail_counter = 0
         while fail_counter < 3:
             try:
                 response = query_plm(el,
-                                     template,
+                                     templateDocs,
                                      openai_key, 
                                      model, 
                                      temperature,
@@ -134,7 +175,7 @@ def generate_relations(dataset_name,
             
             try:
                 relation_list = generation['relations']
-                relations = template.extract_relations(relation_list)
+                relations = templateDocs.extract_relations(relation_list)
                 break
             except:
                 print('Problem extracting relations from string')
@@ -142,6 +183,8 @@ def generate_relations(dataset_name,
                 relations = None
                 fail_counter += 1
 
+        print('relations extracted: ', relation_list)
+        print('gold relations: ', el.relations)
         responses.append(response)
         generations.append(generation)
         predicted_relations.append(relations)
@@ -238,12 +281,12 @@ def evaluate_performance_example(el_example,
     performance_calculator.update(scorer.TP, scorer.FP, scorer.FN)
 
     # error analysis details
-    details = {'example': el_example,
-                'gold_relations': el_example.relations,
-                'predicted_relations': el_predicted_relations,
-                'performance': deepcopy(scorer),
-                'oracle': oracle if 'oracle' in globals() else None
-                }
+    # details = {'example': el_example,
+    #             'gold_relations': el_example.relations,
+    #             'predicted_relations': el_predicted_relations,
+    #             'performance': deepcopy(scorer),
+    #             'oracle': oracle if 'oracle' in globals() else None
+    #             }
 
     # details_list.append(details)
 
@@ -309,15 +352,6 @@ def generate_relations_example(dataset_name,
     print('Building retriever...')
     retriever = Retriever(model_name, corpus, db_dir)
     print(f'Retriever has been built, using checkpoint {model_name}.')
-    # body
-    # responses = list()
-    # responsesDocs = list()
-    # generations = list()
-    # generationsDocs = list()
-    # predicted_relations = list()
-    # predicted_relationsDocs = list()
-    # performance_zeroshot = list()
-    # performance_support_docs = list()
 
     print('Extract relations without support docs...')
 
@@ -416,12 +450,12 @@ def generate_relations_example(dataset_name,
             while fail_counter < 3:
                 try:
                     responseDocs = query_plm(el,
-                                         templateDocs,
-                                         openai_key,
-                                         model,
-                                         temperature,
-                                         max_tokens,
-                                         generate_seed + fail_counter * 100)
+                                             templateDocs,
+                                             openai_key,
+                                             model,
+                                             temperature,
+                                             max_tokens,
+                                             generate_seed + fail_counter * 100)
                 except Exception as e:
                     print(f"An error occurred: {e}")
                     print('Problem with chat completion')
@@ -528,7 +562,7 @@ def retrieve_documents(dataset_name,
         key = el.title.lower()
         if completed:
             if key in completed:
-                print(f'Input with title {key} has been found, continue to next one...')
+                print(f'Input with title ##{key}## has been found, continue to next one...')
                 continue
         out_dict = {}
         out_dict['input_text'] = el.title + ' ' + el.text
@@ -564,11 +598,11 @@ def retrieve_documents(dataset_name,
 
 def run(dataset_name,
         split,
-        template,
+        templateDocs,
         openai_key,
         save_dir,
         model = 'gpt-4-1106-preview', 
-        temperature = 0.7,
+        temperature = 0.1,
         max_tokens = 4096, 
         predicted_relations_filename='predicted_relations.save',
         performance_filename='performance.save',
@@ -577,12 +611,15 @@ def run(dataset_name,
         normalized=False,
         max_examples=1,
         data_seed=0,
-        generate_seed=0
+        generate_seed=0,
+        retrieved_file='output/ChemProtDoc_num_docs_10/outfile_test.json',
+        reranker_model='reranker',
+        top_k=10,
         ):
     
     predicted_relations = generate_relations(dataset_name,
                                              split,
-                                             template,
+                                             templateDocs,
                                              openai_key,
                                              save_dir,
                                              model, 
@@ -591,122 +628,116 @@ def run(dataset_name,
                                              predicted_relations_filename,
                                              max_examples,
                                              data_seed,
-                                             generate_seed)
+                                             generate_seed,
+                                             retrieved_file,
+                                             reranker_model,
+                                             top_k)
     
-    # performance = evaluate_performance(dataset_name,
-    #                                    split,
-    #                                    save_dir,
-    #                                    predicted_relations,
-    #                                    performance_filename,
-    #                                    details_filename,
-    #                                    scorer_class,
-    #                                    normalized,
-    #                                    max_examples,
-    #                                    data_seed)
-    
-    random.seed(data_seed)
-    dataset = load_dataset(dataset_name, split)
-    dataset.random_subset(max_examples, data_seed)
-    
-    performance = evaluate_performance_example(dataset,
+    performance = evaluate_performance(dataset_name,
+                                       split,
+                                       save_dir,
                                        predicted_relations,
-                                       data_seed=data_seed)
-    
+                                       performance_filename,
+                                       details_filename,
+                                       scorer_class,
+                                       normalized,
+                                       max_examples,
+                                       data_seed)
 
     return performance
 
 # new function to compare performance with additional documents
-def run_biorag(dataset_name,
-        split,
-        template,
-        openai_key,
-        save_dir,
-        model = 'gpt-4-1106-preview', 
-        temperature = 0.7,
-        max_tokens = 4096, 
-        predicted_relations_filename='predicted_relations.save',
-        performance_filename='performance.save',
-        details_filename='details.save',
-        scorer_class='LowercaseScorer',
-        normalized=False,
-        max_examples=1,
-        data_seed=0,
-        generate_seed=0
-        ):
-    
-    random.seed(data_seed)
-
-    # load data
-    dataset = load_dataset(dataset_name, split)
-
-    # testing out on a small portion of data
-    if max_examples is not None:
-        dataset.random_subset(max_examples, data_seed)
-
-    # Get templates for appropriate dataset
-    templates = importlib.import_module(f'templates.{dataset_name}')
-    template = getattr(templates, template)
-
-    # body
-    responses = list()
-    generations = list()
-    predicted_relations = list()
-
-    for i, el in enumerate(tqdm(dataset, desc='generating')):
-        fail_counter = 0
-        while fail_counter < 3:
-            try:
-                response = query_plm(el,
-                                     template,
-                                     openai_key, 
-                                     model, 
-                                     temperature,
-                                     max_tokens, 
-                                     generate_seed + fail_counter * 100)
-            except:
-                print('Problem with chat completion')
-                fail_counter += 1
-                response = None
-                continue
-            
-            try:
-                generation = process_response(response)
-            except:
-                print('Problem getting json from response')
-                print('response: ', response)
-                generation = None
-                fail_counter += 1
-                continue
-            
-            try:
-                relation_list = generation['relations']
-                relations = template.extract_relations(relation_list)
-                break
-            except:
-                print('Problem extracting relations from string')
-                print('generation: ', generation)
-                relations = None
-                fail_counter += 1
-    
-    predicted_relations = generate_relations(dataset_name,
-                                             split,
-                                             template,
-                                             openai_key,
-                                             save_dir,
-                                             model, 
-                                             temperature,
-                                             max_tokens, 
-                                             predicted_relations_filename,
-                                             max_examples,
-                                             data_seed,
-                                             generate_seed)
-    random.seed(data_seed)
-    dataset = load_dataset(dataset_name, split)
-    dataset.random_subset(max_examples, data_seed)
-    
-    performance = evaluate_performance_example(dataset,
-                                       predicted_relations,
-                                       data_seed=data_seed)
+# def run_biorag(dataset_name,
+#         split,
+#         template,
+#         openai_key,
+#         save_dir,
+#         model = 'gpt-4-1106-preview',
+#         temperature = 0.7,
+#         max_tokens = 4096,
+#         predicted_relations_filename='predicted_relations.save',
+#         performance_filename='performance.save',
+#         details_filename='details.save',
+#         scorer_class='LowercaseScorer',
+#         normalized=False,
+#         max_examples=1,
+#         data_seed=0,
+#         generate_seed=0
+#         ):
+#
+#     random.seed(data_seed)
+#
+#     # load data
+#     dataset = load_dataset(dataset_name, split)
+#
+#     # testing out on a small portion of data
+#     if max_examples is not None:
+#         dataset.random_subset(max_examples, data_seed)
+#
+#     # Get templates for appropriate dataset
+#     templates = importlib.import_module(f'templates.{dataset_name}')
+#     template = getattr(templates, template)
+#
+#     # body
+#     responses = list()
+#     generations = list()
+#     predicted_relations = list()
+#
+#     for i, el in enumerate(tqdm(dataset, desc='generating')):
+#         fail_counter = 0
+#         while fail_counter < 3:
+#             try:
+#                 response = query_plm(el,
+#                                      template,
+#                                      openai_key,
+#                                      model,
+#                                      temperature,
+#                                      max_tokens,
+#                                      generate_seed + fail_counter * 100)
+#             except:
+#                 print('Problem with chat completion')
+#                 fail_counter += 1
+#                 response = None
+#                 continue
+#
+#             try:
+#                 generation = process_response(response)
+#             except:
+#                 print('Problem getting json from response')
+#                 print('response: ', response)
+#                 generation = None
+#                 fail_counter += 1
+#                 continue
+#
+#             try:
+#                 relation_list = generation['relations']
+#                 relations = template.extract_relations(relation_list)
+#                 break
+#             except:
+#                 print('Problem extracting relations from string')
+#                 print('generation: ', generation)
+#                 relations = None
+#                 fail_counter += 1
+#
+#     predicted_relations = generate_relations(dataset_name,
+#                                              split,
+#                                              template,
+#                                              openai_key,
+#                                              save_dir,
+#                                              model,
+#                                              temperature,
+#                                              max_tokens,
+#                                              predicted_relations_filename,
+#                                              max_examples,
+#                                              data_seed,
+#                                              generate_seed)
+#     random.seed(data_seed)
+#     dataset = load_dataset(dataset_name, split)
+#     dataset.random_subset(max_examples, data_seed)
+#
+#     performance = evaluate_performance_example(dataset,
+#                                        predicted_relations,
+#                                        data_seed=data_seed)
 #%% multi-run stuff
 def transpose_list(list_of_lists):
     return [[list_of_lists[i][j] for i in range(len(list_of_lists))] for j in range(len(list_of_lists[0]))]
