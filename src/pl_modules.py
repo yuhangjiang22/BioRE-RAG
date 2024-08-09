@@ -20,7 +20,7 @@ from transformers.optimization import (
 from scheduler import get_inverse_square_root_schedule_with_warmup
 from datasets import load_dataset, load_metric
 from torch.nn.utils.rnn import pad_sequence
-from utils import BartTripletHead, shift_tokens_left, extract_triplets_typed, extract_triplets
+from utils import shift_tokens_left, extract_triplets_typed, extract_triplets
 
 arg_to_scheduler = {
     "linear": get_linear_schedule_with_warmup,
@@ -153,7 +153,7 @@ class BasePLModule(pl.LightningModule):
         loss, logits = self.forward(batch, labels)
         # self.train_loss.append(loss)
         # self.train_logits.append(logits)
-        self.log('loss', loss, on_step=False, on_epoch=False)
+        self.log('loss', loss)
         batch["labels"] = labels_original
         # print(torch.cuda.memory_summary())
 

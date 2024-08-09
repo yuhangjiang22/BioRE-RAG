@@ -66,7 +66,7 @@ class BasePLDataModule(pl.LightningDataModule):
         if conf.relations_file:
             self.datasets = load_dataset(conf.dataset_name, data_files={'train': conf.train_file, 'dev': conf.validation_file, 'test': conf.test_file, 'relations': conf.relations_file})
         else:
-            self.datasets = load_dataset(conf.dataset_name)
+            self.datasets = load_dataset(conf.dataset_name, trust_remote_code=True)
         datasets.enable_caching()
         self.prefix = conf.source_prefix if conf.source_prefix is not None else ""
         self.column_names = self.datasets["train"].column_names

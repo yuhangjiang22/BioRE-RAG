@@ -4,13 +4,13 @@ from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from pl_data_modules import BasePLDataModule
 from pl_modules import BasePLModule
 from transformers import AutoConfig, AutoModelForSeq2SeqLM, AutoTokenizer
-from pytorch_lightning.loggers.wandb import WandbLogger
+# from pytorch_lightning.loggers.wandb import WandbLogger
 
 from pytorch_lightning.callbacks import LearningRateMonitor
 from omegaconf import OmegaConf
 
 
-conf = OmegaConf.load("rebel/conf/config.yaml")
+conf = OmegaConf.load("biomedrag-rebel/biomedrag/conf/config.yaml")
 
 config = AutoConfig.from_pretrained(
     conf.config_name if conf.config_name else conf.model_name_or_path,
